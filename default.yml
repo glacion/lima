@@ -12,7 +12,7 @@ containerd:
 
 images:
   - arch: aarch64
-    digest: 3405f30db62441c18258c21c01754addeb4dfdf9714d151f042942d223ab3865
+    digest: sha256:3405f30db62441c18258c21c01754addeb4dfdf9714d151f042942d223ab3865
     location: https://repo.almalinux.org/almalinux/9.1/cloud/aarch64/images/AlmaLinux-9-GenericCloud-9.1-20221118.aarch64.qcow2
 
 mounts:
