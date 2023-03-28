@@ -1,0 +1,6 @@
+# vi: set ft=yaml.ansible :
+---
+enable_service: true
+prefix: /usr/local
+username: "{{ ansible_env.SUDO_USER or ansible_user_id }}"
+version: 1.1.0

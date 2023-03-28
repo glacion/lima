@@ -1,0 +1,65 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Ensure directories
+  loop:
+    - /etc/containerd
+    - "{{ prefix }}/lib/systemd/system"
+  ansible.builtin.file:
+    mode: "0755"
+    path: "{{ item }}"
+    state: directory
+
+- name: Push configuration
+  ansible.builtin.template:
+    dest: /etc/containerd/config.toml
+    mode: "0644"
+    src: config.toml
+
+- name: Push service definition
+  ansible.builtin.template:
+    dest: "{{ prefix }}/lib/systemd/system/containerd.service"
+    mode: "0644"
+    src: containerd.service
+
+- name: Download containerd archive
+  ansible.builtin.get_url:
+    checksum: "sha256:\
+      https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/\
+      containerd-{{ containerd_version }}-linux-{{ go_arch }}.tar.gz.sha256sum"
+    dest: /tmp
+    mode: "0644"
+    url:
+      "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/\
+      containerd-{{ containerd_version }}-linux-{{ go_arch }}.tar.gz"
+
+- name: Extract containerd archive
+  ansible.builtin.unarchive:
+    dest: "{{ prefix }}"
+    mode: "0755"
+    remote_src: true
+    src: /tmp/containerd-{{ containerd_version }}-linux-{{ go_arch }}.tar.gz
+
+- name: Download nerdctl archive
+  ansible.builtin.get_url:
+    checksum: "sha256:\
+      https://github.com/containerd/nerdctl/releases/download/v{{ nerdctl_version }}/\
+      SHA256SUMS"
+    dest: /tmp
+    mode: "0644"
+    url:
+      "https://github.com/containerd/nerdctl/releases/download/v{{ nerdctl_version }}/\
+      nerdctl-{{ nerdctl_version }}-linux-{{ go_arch }}.tar.gz"
+
+- name: Extract nerdctl archive
+  ansible.builtin.unarchive:
+    dest: "{{ prefix }}/bin"
+    mode: "0755"
+    remote_src: true
+    src: /tmp/nerdctl-{{ nerdctl_version }}-linux-{{ go_arch }}.tar.gz
+
+- name: Enable containerd service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    enabled: true
+    state: started
+    name: containerd

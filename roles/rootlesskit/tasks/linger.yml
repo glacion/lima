@@ -1,0 +1,21 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Check linger status
+  changed_when: false
+  failed_when: linger.rc != 0
+  register: linger
+  ansible.builtin.command: >
+    loginctl
+    show-user
+    --property=Linger
+    "{{ user.name }}"
+
+- name: Enable linger
+  changed_when: true
+  failed_when: enable_linger.rc != 0
+  register: enable_linger
+  when: linger.stdout == "Linger=no"
+  ansible.builtin.command: >
+    loginctl
+    enable-linger
+    "{{ user.name }}"

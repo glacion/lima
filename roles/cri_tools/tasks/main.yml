@@ -1,0 +1,31 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Push crictl configuration
+  ansible.builtin.template:
+    dest: /etc/crictl.yaml
+    mode: "0644"
+    src: crictl.yaml
+
+- name: Get crictl checksum
+  register: crictl_sha256
+  ansible.builtin.uri:
+    return_content: true
+    url:
+      "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ version }}/\
+      crictl-v{{ version }}-linux-{{ go_arch }}.tar.gz.sha256"
+
+- name: Download crictl archive
+  ansible.builtin.get_url:
+    checksum: sha256:{{ crictl_sha256.content | trim }}
+    dest: /tmp
+    mode: "0644"
+    url:
+      "https://github.com/kubernetes-sigs/cri-tools/releases/download/v{{ version }}/\
+      crictl-v{{ version }}-linux-{{ go_arch }}.tar.gz"
+
+- name: Extract crictl archive
+  ansible.builtin.unarchive:
+    dest: "{{ prefix }}/bin"
+    mode: "0755"
+    remote_src: true
+    src: /tmp/crictl-v{{ version }}-linux-{{ go_arch }}.tar.gz

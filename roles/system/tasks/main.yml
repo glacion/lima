@@ -1,0 +1,19 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Push kernel module configuration
+  notify: Reload modules
+  ansible.builtin.template:
+    dest: /etc/modules-load.d/{{ filename }}
+    group: root
+    mode: "0644"
+    owner: root
+    src: modules.conf
+
+- name: Push sysctl configuration
+  notify: Reload sysctl
+  ansible.builtin.template:
+    dest: /etc/sysctl.d/{{ filename }}
+    group: root
+    mode: "0644"
+    owner: root
+    src: sysctl.conf

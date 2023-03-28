@@ -1,0 +1,5 @@
+# vi: set ft=yaml.ansible :
+---
+prefix: /usr/local
+containerd_version: 1.7.0
+nerdctl_version: 1.2.1

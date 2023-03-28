@@ -1,0 +1,79 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Ensure directories
+  loop:
+    - /etc/kubeadm
+    - /etc/kubernetes/manifests
+    - /etc/kubernetes/pki
+    - "{{ prefix }}/lib/systemd/system"
+    - "{{ prefix }}/lib/systemd/system/kubelet.service.d"
+  ansible.builtin.file:
+    mode: "0755"
+    path: "{{ item }}"
+    state: directory
+
+- name: Push service configuration
+  loop:
+    - kubelet.service
+    - kubelet.service.d/10-kubeadm.conf
+  ansible.builtin.template:
+    dest: "{{ prefix }}/lib/systemd/system/{{ item }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ item }}"
+
+- name: Get kubectl checksum
+  register: kubectl_sha256
+  ansible.builtin.uri:
+    return_content: true
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubectl.sha256
+
+- name: Install kubectl
+  ansible.builtin.get_url:
+    checksum: sha256:{{ kubectl_sha256.content | trim }}
+    dest: "{{ prefix }}/bin/kubectl"
+    mode: "0755"
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubectl
+
+- name: Get kubeadm checksum
+  register: kubeadm_sha256
+  ansible.builtin.uri:
+    return_content: true
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubeadm.sha256
+
+- name: Install kubeadm
+  ansible.builtin.get_url:
+    checksum: sha256:{{ kubeadm_sha256.content | trim }}
+    dest: "{{ prefix }}/bin/kubeadm"
+    mode: "0755"
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubeadm
+
+- name: Get kubelet checksum
+  register: kubelet_sha256
+  ansible.builtin.uri:
+    return_content: true
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubelet.sha256
+
+- name: Install kubelet
+  ansible.builtin.get_url:
+    checksum: sha256:{{ kubelet_sha256.content | trim }}
+    dest: "{{ prefix }}/bin/kubelet"
+    mode: "0755"
+    url: https://dl.k8s.io/v{{ version }}/bin/linux/{{ go_arch }}/kubelet
+
+- name: Enable service
+  ansible.builtin.systemd:
+    daemon_reload: true
+    enabled: true
+    name: kubelet
+    state: started
+
+- name: Download kubernetes containers
+  changed_when: false
+  failed_when: kubeadm_pull.rc != 0
+  register: kubeadm_pull
+  ansible.builtin.command: >
+    {{ prefix }}/bin/kubeadm
+    config images pull
+    --kubernetes-version={{ version }}

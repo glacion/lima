@@ -1,0 +1,5 @@
+# vi: set ft=yaml.ansible :
+---
+prefix: /usr/local
+version: 1.26.1
+runtime_endpoint: unix:///var/run/containerd/containerd.sock

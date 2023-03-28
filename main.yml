@@ -1,0 +1,77 @@
+# vi: set ft=yaml.ansible :
+---
+- name: Preflight
+  hosts: all
+  become: true
+  tasks:
+    - name: Add /usr/local/bin to sudo PATH
+      ansible.builtin.copy:
+        content: "Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
+        dest: /etc/sudoers.d/localpath
+        mode: "0440"
+
+    # Maybe later https://github.com/kubernetes/kubeadm/issues/279
+    - name: Set SELinux to permissive
+      block:
+        - name: Set SELinux Config
+          ansible.builtin.copy:
+            dest: /etc/selinux/config
+            mode: "0440"
+            content: |
+              SELINUX=permissive
+              SELINUXTYPE=targeted
+
+        - name: Set SELinux to permissive
+          changed_when: false # Meh too tedious to check
+          failed_when: setenforce.rc != 0
+          register: setenforce
+          ansible.builtin.command: /usr/sbin/setenforce 0
+
+    - name: Update
+      ansible.builtin.dnf:
+        name: "*"
+        state: latest # noqa package-latest
+
+    - name: Install necessary packages
+      ansible.builtin.dnf:
+        state: present
+        name:
+          - conntrack-tools
+          - container-selinux
+          - epel-release
+          - ethtool
+          - iproute-tc
+          - iptables-nft
+          - ipvsadm
+          - socat
+          - slirp4netns
+
+- name: Install container runtime
+  hosts: all
+  become: true
+  roles:
+    - role: runc
+      vars:
+        version: 1.1.4
+    - role: cni_plugins
+      vars:
+        version: 1.2.0
+    - role: containerd
+      vars:
+        containerd_version: 1.7.0
+        nerdctl_version: 1.2.1
+    - role: rootlesskit
+      vars:
+        version: 1.1.0
+
+- name: Install kubernetes
+  hosts: all
+  become: true
+  roles:
+    - role: system
+    - role: cri_tools
+      vars:
+        version: 1.26.1
+    - role: kubernetes
+      vars:
+        version: 1.26.3

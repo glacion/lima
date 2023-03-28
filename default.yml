@@ -1,0 +1,35 @@
+arch: aarch64
+cpus: 4
+disk: 256GiB
+memory: 8GiB
+mountType: virtiofs
+vmType: vz
+
+containerd:
+  system: false
+  user: false
+  archives: []
+
+images:
+  - location: https://repo.almalinux.org/almalinux/9.1/cloud/aarch64/images/AlmaLinux-9-GenericCloud-latest.aarch64.qcow2
+    arch: aarch64
+
+mounts:
+  - location: "~"
+    writable: true
+  - location: "/tmp/lima"
+    writable: true
+
+networks:
+  - vzNAT: true
+
+rosetta:
+  binfmt: true
+  enabled: true
+
+ssh:
+  forwardAgent: true
+  forwardX11: true
+  forwardX11Trusted: true
+  loadDotSSHPubKeys: true
+  localPort: 60022
