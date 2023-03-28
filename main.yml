@@ -3,6 +3,8 @@
 - name: Preflight
   hosts: all
   become: true
+  roles:
+    - role: system
   tasks:
     - name: Add /usr/local/bin to sudo PATH
       ansible.builtin.copy:
@@ -45,6 +47,9 @@
           - ipvsadm
           - socat
           - slirp4netns
+    
+    - name: Flush handlers
+      meta: flush_handlers
 
 - name: Install container runtime
   hosts: all
@@ -67,11 +72,50 @@
 - name: Install kubernetes
   hosts: all
   become: true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  vars:
+    kubernetes_version: 1.26.3
+    pod_cidr: 10.244.0.0/16
   roles:
-    - role: system
     - role: cri_tools
       vars:
         version: 1.26.1
     - role: kubernetes
       vars:
-        version: 1.26.3
+        version: "{{ kubernetes_version }}"
+  tasks:
+    - name: Install kubeadm configuration
+      ansible.builtin.template:
+        src: kubeadm.yml
+        dest: /etc/kubeadm/config.yml
+
+    - name: Initialize cluster
+      changed_when: init.rc == 0
+      failed_when: init.rc != 0 and "/etc/kubernetes/manifests/kube-apiserver.yaml already exists" not in init.stderr
+      register: init
+      ansible.builtin.command: >
+        kubeadm init
+        --config=/etc/kubeadm/config.yml
+
+    - name: Install flannel manifest
+      ansible.builtin.template:
+        src: flannel.yml
+        dest: /etc/kubernetes/flannel.yml
+
+    - name: Apply flannel manifest
+      changed_when: '" configured " in flannel.stdout or " created " in flannel.stdout'
+      failed_when: flannel.rc != 0
+      register: flannel
+      ansible.builtin.command: >
+        kubectl apply -f
+        /etc/kubernetes/flannel.yml
+
+    - name: Untaint node
+      changed_when: untaint.rc == 0 and "untainted" in untaint.stdout
+      failed_when: untaint.rc != 0 and "not found" not in untaint.stderr
+      register: untaint
+      ansible.builtin.command: >
+        kubectl taint node
+        {{ ansible_hostname }}
+        node-role.kubernetes.io/control-plane:NoSchedule-
