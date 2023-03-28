@@ -6,6 +6,7 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1beta3
 kind: ClusterConfiguration
+controlPlaneEndpoint: localhost:6443
 kubernetesVersion: "{{ kubernetes_version }}"
 networking:
   podSubnet: "{{ pod_cidr }}"
