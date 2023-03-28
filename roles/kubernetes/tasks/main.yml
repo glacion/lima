@@ -67,13 +67,3 @@
     daemon_reload: true
     enabled: true
     name: kubelet
-    state: started
-
-- name: Download kubernetes containers
-  changed_when: false
-  failed_when: kubeadm_pull.rc != 0
-  register: kubeadm_pull
-  ansible.builtin.command: >
-    {{ prefix }}/bin/kubeadm
-    config images pull
-    --kubernetes-version={{ version }}

@@ -47,9 +47,9 @@
           - ipvsadm
           - socat
           - slirp4netns
-    
+
     - name: Flush handlers
-      meta: flush_handlers
+      ansible.builtin.meta: flush_handlers
 
 - name: Install container runtime
   hosts: all
@@ -85,10 +85,19 @@
       vars:
         version: "{{ kubernetes_version }}"
   tasks:
+    - name: Start services
+      loop:
+        - containerd
+        - kubelet
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+
     - name: Install kubeadm configuration
       ansible.builtin.template:
-        src: kubeadm.yml
         dest: /etc/kubeadm/config.yml
+        mode: "0644"
+        src: kubeadm.yml
 
     - name: Initialize cluster
       changed_when: init.rc == 0
@@ -100,8 +109,9 @@
 
     - name: Install flannel manifest
       ansible.builtin.template:
-        src: flannel.yml
         dest: /etc/kubernetes/flannel.yml
+        mode: "0644"
+        src: flannel.yml
 
     - name: Apply flannel manifest
       changed_when: '" configured " in flannel.stdout or " created " in flannel.stdout'
