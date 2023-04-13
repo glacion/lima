@@ -107,19 +107,25 @@
         kubeadm init
         --config=/etc/kubeadm/config.yml
 
-    - name: Install flannel manifest
+    - name: Install manifests
+      loop:
+        - flannel.yml
+        - local-path-storage.yml
       ansible.builtin.template:
-        dest: /etc/kubernetes/flannel.yml
+        dest: /etc/kubernetes/{{ item }}
         mode: "0644"
-        src: flannel.yml
+        src: "{{ item }}"
 
-    - name: Apply flannel manifest
-      changed_when: '" configured " in flannel.stdout or " created " in flannel.stdout'
-      failed_when: flannel.rc != 0
-      register: flannel
+    - name: Apply manifests
+      changed_when: '" configured " in apply.stdout or " created " in apply.stdout'
+      failed_when: apply.rc != 0
+      register: apply
+      loop:
+        - flannel.yml
+        - local-path-storage.yml
       ansible.builtin.command: >
         kubectl apply -f
-        /etc/kubernetes/flannel.yml
+        /etc/kubernetes/{{ item }}
 
     - name: Untaint node
       changed_when: untaint.rc == 0 and "untainted" in untaint.stdout
