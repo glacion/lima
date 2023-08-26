@@ -1,6 +1,6 @@
 arch: aarch64
 cpus: 4
-disk: 256GiB
+disk: 128GiB
 memory: 8GiB
 mountType: virtiofs
 vmType: vz
@@ -12,8 +12,8 @@ containerd:
 
 images:
   - arch: aarch64
-    digest: sha256:3405f30db62441c18258c21c01754addeb4dfdf9714d151f042942d223ab3865
-    location: https://repo.almalinux.org/almalinux/9.1/cloud/aarch64/images/AlmaLinux-9-GenericCloud-9.1-20221118.aarch64.qcow2
+    digest: sha512:645b7710b16c2687f0f77ab612684a48630e546acdf03335652bf1fd9958276f250e8fa6859f35c184df35414fd00a95823e2703303ff90932ab8f21bd54a8c0
+    location: https://cloud.debian.org/images/cloud/bookworm/20230802-1460/debian-12-genericcloud-arm64-20230802-1460.qcow2
 
 mounts:
   - location: "~"

@@ -6,47 +6,25 @@
   roles:
     - role: system
   tasks:
-    - name: Add /usr/local/bin to sudo PATH
-      ansible.builtin.copy:
-        content: "Defaults secure_path = /sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin"
-        dest: /etc/sudoers.d/localpath
-        mode: "0440"
-
-    # Maybe later https://github.com/kubernetes/kubeadm/issues/279
-    - name: Set SELinux to permissive
-      block:
-        - name: Set SELinux Config
-          ansible.builtin.copy:
-            dest: /etc/selinux/config
-            mode: "0440"
-            content: |
-              SELINUX=permissive
-              SELINUXTYPE=targeted
-
-        - name: Set SELinux to permissive
-          changed_when: false # Meh too tedious to check
-          failed_when: setenforce.rc != 0
-          register: setenforce
-          ansible.builtin.command: /usr/sbin/setenforce 0
-
     - name: Update
-      ansible.builtin.dnf:
-        name: "*"
-        state: latest # noqa package-latest
+      ansible.builtin.apt:
+        upgrade: dist
+        update_cache: true
 
     - name: Install necessary packages
-      ansible.builtin.dnf:
+      ansible.builtin.apt:
         state: present
         name:
-          - conntrack-tools
-          - container-selinux
-          - epel-release
+          # - conntrack-tools
+          - dbus-user-session
           - ethtool
-          - iproute-tc
-          - iptables-nft
+          # - iproute-tc
+          - conntrack
+          - nftables
           - ipvsadm
           - socat
           - slirp4netns
+          - uidmap
 
     - name: Flush handlers
       ansible.builtin.meta: flush_handlers
