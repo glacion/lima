@@ -15,6 +15,7 @@
       ansible.builtin.apt:
         state: present
         name:
+          - build-essential
           # - conntrack-tools
           - dbus-user-session
           - ethtool
